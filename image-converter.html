@@ -1,0 +1,185 @@
+<!DOCTYPE html><html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Image Converter Tool</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f8ff;
+      color: #333;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }.container {
+  background: #fff;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  text-align: center;
+  width: 95%;
+  max-width: 500px;
+}
+
+h2 {
+  color: #007BFF;
+  margin-bottom: 20px;
+}
+
+input[type="file"] {
+  margin: 15px 0;
+  padding: 10px;
+  border: 2px dashed #007BFF;
+  border-radius: 8px;
+  width: 100%;
+  cursor: pointer;
+  background: #eaf4ff;
+}
+
+select, button {
+  margin: 10px 0;
+  padding: 10px;
+  width: 100%;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+}
+
+select {
+  background: #f7f7f7;
+  border: 1px solid #ccc;
+}
+
+button {
+  background: #007BFF;
+  color: white;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+button:hover {
+  background: #0056b3;
+}
+
+.image-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 15px 0;
+}
+
+img {
+  max-width: 100%;
+  border-radius: 10px;
+  margin: 10px 0;
+}
+
+.image-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+
+.download-btn {
+  background: #28a745;
+  margin-top: 10px;
+}
+
+.download-btn:hover {
+  background: #1e7e34;
+}
+
+@media (max-width: 600px) {
+  .image-grid {
+    grid-template-columns: 1fr;
+  }
+  h2 {
+    font-size: 20px;
+  }
+  button, select, input[type="file"] {
+    font-size: 14px;
+    padding: 8px;
+  }
+}
+
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Image Converter Tool</h2>
+    <input type="file" id="upload" accept="image/*">
+    <br><select id="format">
+  <option value="image/jpeg">Convert to JPG</option>
+  <option value="image/png">Convert to PNG</option>
+  <option value="image/webp">Convert to WebP</option>
+  <option value="image/gif">Convert to GIF</option>
+</select>
+
+<button onclick="convertImage()">Convert</button>
+
+<div class="image-grid">
+  <div>
+    <img id="preview" style="display:none;">
+  </div>
+  <div>
+    <img id="converted" style="display:none;">
+    <button id="downloadBtn" class="download-btn" style="display:none;">Download Converted</button>
+  </div>
+</div>
+
+  </div>  <script>
+    const upload = document.getElementById('upload');
+    const preview = document.getElementById('preview');
+    const converted = document.getElementById('converted');
+    const downloadBtn = document.getElementById('downloadBtn');
+
+    upload.addEventListener('change', (event) => {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          preview.src = e.target.result;
+          preview.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    function convertImage() {
+      const format = document.getElementById('format').value;
+      if (!preview.src) {
+        alert('Please upload an image first!');
+        return;
+      }
+
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+      img.src = preview.src;
+      img.onload = () => {
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.drawImage(img, 0, 0);
+
+        if (format === "image/gif") {
+          alert("Note: GIFs will be converted as static images.");
+        }
+
+        const convertedData = canvas.toDataURL(format);
+        converted.src = convertedData;
+        converted.style.display = 'block';
+
+        downloadBtn.style.display = 'inline-block';
+        downloadBtn.onclick = () => {
+          const link = document.createElement('a');
+          link.href = convertedData;
+          link.download = `converted.${format.split('/')[1]}`;
+          link.click();
+        };
+      };
+    }
+  </script></body>
+</html>
