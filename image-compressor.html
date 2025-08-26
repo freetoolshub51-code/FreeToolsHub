@@ -1,0 +1,222 @@
+<!DOCTYPE html><html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Image Compressor Tool</title>
+  <style>
+    :root{
+      --blue:#0a7bff;
+      --blue-600:#0660c6;
+      --bg:#eef6ff;
+      --card:#ffffff;
+      --text:#1b1f23;
+      --muted:#6b7280;
+      --success:#28a745;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;
+      background:var(--bg); color:var(--text); min-height:100vh;
+      display:flex; align-items:center; justify-content:center; padding:24px;
+    }
+    .card{
+      width:100%; max-width:760px; background:var(--card); border-radius:16px;
+      box-shadow:0 10px 24px rgba(10,123,255,.12);
+      padding:22px; overflow:hidden;
+    }
+    h1{margin:0 0 12px; font-size:24px; color:var(--blue)}
+    .sub{margin:0 0 18px; color:var(--muted); font-size:14px}.controls{display:grid; grid-template-columns:1fr; gap:12px; margin-bottom:16px}
+.file-input{border:2px dashed var(--blue); background:#eaf3ff; border-radius:12px; padding:10px}
+.file-input input{width:100%}
+.row{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+.row .cell{background:#f8fbff; border:1px solid #e5efff; border-radius:12px; padding:12px}
+.label{font-size:12px; color:var(--muted); margin-bottom:6px}
+.imgbox{display:flex; align-items:center; justify-content:center; background:#fff; border:1px dashed #d9e7ff; border-radius:10px; min-height:180px; overflow:hidden}
+.imgbox img{max-width:100%; height:auto; display:block}
+.sizes{display:flex; justify-content:space-between; font-size:12px; color:var(--muted); margin-top:8px}
+
+.actions{display:grid; grid-template-columns:1fr; gap:10px; margin-top:14px}
+select, button, input[type="range"]{width:100%; padding:10px; border-radius:10px; border:1px solid #cfe2ff; font-size:14px; background:#fff}
+.btn{background:var(--blue); color:#fff; border:none; cursor:pointer; transition:.2s}
+.btn:hover{background:var(--blue-600)}
+.btn-success{background:var(--success)}
+
+.range-wrap{background:#fff; border:1px solid #cfe2ff; border-radius:10px; padding:10px}
+.range-head{display:flex; justify-content:space-between; font-size:13px; margin-bottom:6px; color:var(--muted)}
+
+.note{font-size:12px; color:var(--muted); margin-top:6px}
+
+@media (max-width:640px){
+  .row{grid-template-columns:1fr}
+  h1{font-size:20px}
+}
+
+  </style>
+</head>
+<body>
+  <main class="card">
+    <h1>Image Compressor</h1>
+    <p class="sub">Bright blue & white UI • Upload → Compress → Preview → Download</p><div class="controls">
+  <div class="file-input">
+    <input id="fileInput" type="file" accept="image/*" />
+  </div>
+
+  <div class="row">
+    <div class="cell">
+      <div class="label">Original Preview</div>
+      <div class="imgbox"><img id="origImg" alt="Original preview" style="display:none" /></div>
+      <div class="sizes"><span>Size: <strong id="origSize">—</strong></span><span id="origDims">—</span></div>
+    </div>
+    <div class="cell">
+      <div class="label">Compressed Preview</div>
+      <div class="imgbox"><img id="compImg" alt="Compressed preview" style="display:none" /></div>
+      <div class="sizes"><span>Size: <strong id="compSize">—</strong></span><span id="compDims">—</span></div>
+    </div>
+  </div>
+
+  <div class="range-wrap">
+    <div class="range-head">
+      <span>Quality</span>
+      <span><strong id="qVal">80%</strong></span>
+    </div>
+    <input id="quality" type="range" min="10" max="100" step="1" value="80" />
+    <div class="note">Higher quality = larger file. PNG ignores quality (use JPG or WebP for best compression). Animated GIFs will be saved as a single frame.</div>
+  </div>
+
+  <div class="actions">
+    <select id="targetFormat">
+      <option value="image/jpeg">Save as JPG</option>
+      <option value="image/webp">Save as WebP</option>
+      <option value="image/png">Save as PNG</option>
+    </select>
+    <button id="compressBtn" class="btn">Compress</button>
+    <button id="downloadBtn" class="btn btn-success" style="display:none">Download Compressed</button>
+  </div>
+  <div class="sizes" style="margin-top:4px">
+    <span id="saving">Savings: —</span>
+    <span id="status"></span>
+  </div>
+</div>
+
+  </main>  <script>
+    const fileInput = document.getElementById('fileInput');
+    const origImg = document.getElementById('origImg');
+    const compImg = document.getElementById('compImg');
+    const origSizeEl = document.getElementById('origSize');
+    const compSizeEl = document.getElementById('compSize');
+    const origDims = document.getElementById('origDims');
+    const compDims = document.getElementById('compDims');
+    const qualityRange = document.getElementById('quality');
+    const qVal = document.getElementById('qVal');
+    const targetFormat = document.getElementById('targetFormat');
+    const compressBtn = document.getElementById('compressBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const savingEl = document.getElementById('saving');
+    const statusEl = document.getElementById('status');
+
+    let originalFile = null; // File
+    let originalURL = null;  // object URL for preview
+    let compressedBlob = null; // Blob
+    let compressedURL = null;  // object URL for preview/download
+
+    function formatBytes(bytes){
+      if (!Number.isFinite(bytes)) return '—';
+      const units=['B','KB','MB','GB'];
+      let i=0; let num=bytes;
+      while(num>=1024 && i<units.length-1){ num/=1024; i++; }
+      return num.toFixed(num<10?2:1)+' '+units[i];
+    }
+
+    function revoke(url){ if(url) URL.revokeObjectURL(url); }
+
+    fileInput.addEventListener('change', e => {
+      const file = e.target.files && e.target.files[0];
+      if(!file) return;
+      originalFile = file;
+      revoke(originalURL); // cleanup last
+      originalURL = URL.createObjectURL(file);
+      origImg.src = originalURL;
+      origImg.style.display = 'block';
+      origSizeEl.textContent = formatBytes(file.size);
+      savingEl.textContent = 'Savings: —';
+      compSizeEl.textContent = '—';
+      compImg.style.display = 'none';
+      downloadBtn.style.display = 'none';
+      statusEl.textContent = '';
+
+      // read dimensions
+      const temp = new Image();
+      temp.onload = () => {
+        origDims.textContent = temp.naturalWidth + '×' + temp.naturalHeight;
+      };
+      temp.src = originalURL;
+    });
+
+    qualityRange.addEventListener('input', () => {
+      qVal.textContent = qualityRange.value + '%';
+    });
+
+    async function canvasCompress(srcURL, mime, q){
+      // q expected 0..1
+      return new Promise((resolve, reject)=>{
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          canvas.width = img.naturalWidth;
+          canvas.height = img.naturalHeight;
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+          // Animated GIF note: we only draw first frame via Image()
+          canvas.toBlob(blob => {
+            if(!blob) return reject(new Error('Compression failed'));
+            resolve({blob, width:canvas.width, height:canvas.height});
+          }, mime, q);
+        };
+        img.onerror = reject;
+        img.src = srcURL;
+      });
+    }
+
+    compressBtn.addEventListener('click', async () => {
+      if(!originalFile){
+        alert('Please upload an image first.');
+        return;
+      }
+      const mime = targetFormat.value; // 'image/jpeg' | 'image/webp' | 'image/png'
+      const q = Math.max(0.1, Math.min(1, Number(qualityRange.value)/100));
+      statusEl.textContent = 'Compressing…';
+
+      try{
+        if (compressedURL) { revoke(compressedURL); compressedURL = null; }
+        const {blob, width, height} = await canvasCompress(originalURL, mime, q);
+        compressedBlob = blob;
+        compressedURL = URL.createObjectURL(blob);
+        compImg.src = compressedURL;
+        compImg.style.display = 'block';
+        compSizeEl.textContent = formatBytes(blob.size);
+        compDims.textContent = width + '×' + height;
+        downloadBtn.style.display = 'block';
+
+        const saved = originalFile.size - blob.size;
+        const pct = saved > 0 ? Math.round((saved / originalFile.size) * 100) : 0;
+        savingEl.textContent = `Savings: ${saved>0?'-':''}${formatBytes(Math.abs(saved))} (${pct}% )`;
+        statusEl.textContent = '';
+      }catch(err){
+        console.error(err);
+        statusEl.textContent = 'Failed to compress.';
+      }
+    });
+
+    downloadBtn.addEventListener('click', () => {
+      if(!compressedBlob) return;
+      const ext = targetFormat.value.split('/')[1];
+      const a = document.createElement('a');
+      a.href = compressedURL;
+      a.download = `compressed.${ext}`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    });
+  </script></body>
+</html>
