@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Images to PDF Tool</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f8ff;
+      color: #333;
+      text-align: center;
+      padding: 20px;
+    }
+    h2 {
+      color: #007BFF;
+    }
+    .uploader {
+      background: #fff;
+      border: 2px dashed #007BFF;
+      padding: 20px;
+      border-radius: 10px;
+      margin: 20px auto;
+      max-width: 400px;
+    }
+    input[type="file"] {
+      margin: 10px 0;
+    }
+    .preview {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin: 15px 0;
+    }
+    .preview img {
+      width: 80px;
+      height: 80px;
+      object-fit: cover;
+      margin: 5px;
+      border: 2px solid #007BFF;
+      border-radius: 8px;
+    }
+    .btn {
+      background: #007BFF;
+      color: white;
+      padding: 10px 18px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      margin-top: 10px;
+    }
+    .btn:hover {
+      background: #0056b3;
+    }
+    .pdf-result {
+      margin-top: 20px;
+      display: none;
+    }
+    .pdf-icon {
+      font-size: 60px;
+      color: #007BFF;
+    }
+  </style>
+</head>
+<body>
+  <h2> Images to PDF Converter</h2>
+  <div class="uploader">
+    <input type="file" id="imageUpload" accept="image/*" multiple>
+    <div class="preview" id="preview"></div>
+    <button class="btn" onclick="generatePDF()">Generate PDF</button>
+  </div>
+
+  <div class="pdf-result" id="pdfResult">
+    <div class="pdf-icon">📄</div>
+    <button class="btn" id="downloadBtn">Download PDF</button>
+  </div>
+
+  <script>
+    let selectedFiles = [];
+
+    document.getElementById("imageUpload").addEventListener("change", (event) => {
+      selectedFiles = event.target.files;
+      const preview = document.getElementById("preview");
+      preview.innerHTML = "";
+      Array.from(selectedFiles).forEach(file => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = document.createElement("img");
+          img.src = e.target.result;
+          preview.appendChild(img);
+        };
+        reader.readAsDataURL(file);
+      });
+    });
+
+    async function generatePDF() {
+      if (selectedFiles.length === 0) {
+        alert("Please select at least one image.");
+        return;
+      }
+
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF();
+
+      for (let i = 0; i < selectedFiles.length; i++) {
+        const file = selectedFiles[i];
+        const imgData = await readFileAsDataURL(file);
+
+        if (i > 0) pdf.addPage();
+        pdf.addImage(imgData, "JPEG", 10, 10, 190, 270);
+      }
+
+      const pdfBlob = pdf.output("blob");
+      const pdfUrl = URL.createObjectURL(pdfBlob);
+
+      document.getElementById("pdfResult").style.display = "block";
+
+      document.getElementById("downloadBtn").onclick = () => {
+        const a = document.createElement("a");
+        a.href = pdfUrl;
+        a.download = "images.pdf";
+        a.click();
+      };
+    }
+
+    function readFileAsDataURL(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+  </script>
+</body>
+</html>
