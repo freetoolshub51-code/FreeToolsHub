@@ -598,23 +598,22 @@
     <title>Image to PDF Card</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        * {
+        /* Reset only for the card component */
+        .ft-card-container * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
         
-        body {
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
+        /* Container to isolate the card from other styles */
+        .ft-card-container {
+            display: inline-block;
+            isolation: isolate; /* Prevents style conflicts */
         }
         
-        .tool-card {
+        /* Card styles */
+        .ft-card {
             width: 320px;
             background: white;
             border-radius: 8px;
@@ -623,30 +622,38 @@
             transition: all 0.3s ease;
         }
         
-        .tool-card:hover {
+        .ft-card:hover {
             transform: translateY(-5px);
             box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
         }
         
-        .tool-content {
+        .ft-card-icon {
+            background: linear-gradient(135deg, #3498db, #2c3e50);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-size: 32px;
+        }
+        
+        .ft-card-content {
             padding: 20px;
         }
         
-        .tool-title {
+        .ft-card-title {
             font-size: 18px;
             font-weight: 600;
             color: #2c3e50;
             margin-bottom: 10px;
         }
         
-        .tool-description {
+        .ft-card-description {
             color: #7f8c8d;
             font-size: 14px;
             line-height: 1.5;
             margin-bottom: 15px;
         }
         
-        .use-tool-btn {
+        .ft-card-button {
             display: inline-block;
             padding: 8px 15px;
             background: #3498db;
@@ -660,23 +667,36 @@
             text-decoration: none;
         }
         
-        .use-tool-btn:hover {
+        .ft-card-button:hover {
             background: #2980b9;
         }
     </style>
 </head>
 <body>
-    <!-- Image to PDF Card -->
-    <div class="tool-card">
-        <div class="tool-content">
-            <h3 class="tool-title">Image to PDF</h3>
-            <p class="tool-description">Convert multiple images into a single PDF file.</p>
-            <a href="image-to-pdf.html" class="use-tool-btn">Use Tool</a>
+    <!-- Isolated card container -->
+    <div class="ft-card-container">
+        <!-- Image to PDF Card -->
+        <div class="ft-card">
+            <div class="ft-card-icon">
+                <i class="fas fa-file-image"></i>
+            </div>
+            <div class="ft-card-content">
+                <h3 class="ft-card-title">Image to PDF</h3>
+                <p class="ft-card-description">Convert multiple images into a single PDF file.</p>
+                <a href="image-to-pdf.html" class="ft-card-button">Use Tool</a>
+            </div>
         </div>
     </div>
+
+    <script>
+        // JavaScript for the card (isolated with custom class names)
+        document.querySelector('.ft-card-button').addEventListener('click', function(e) {
+            e.preventDefault();
+            alert('Image to PDF tool would open here.');
+        });
+    </script>
 </body>
-</html>
-  </div>
+</html> </div>
 </div>
 
     <!-- Calculator Tools Section -->
