@@ -3,90 +3,136 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Images to PDF Tool</title>
+  <title>Multiple Images to PDF</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f0f8ff;
-      color: #333;
+      background: #f0f7ff;
       text-align: center;
       padding: 20px;
+    }
+    .container {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      max-width: 500px;
+      margin: auto;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     }
     h2 {
       color: #007BFF;
     }
-    .uploader {
-      background: #fff;
-      border: 2px dashed #007BFF;
-      padding: 20px;
-      border-radius: 10px;
-      margin: 20px auto;
-      max-width: 400px;
+    input, button {
+      margin: 10px;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
     }
-    input[type="file"] {
-      margin: 10px 0;
+    button {
+      background: #007BFF;
+      color: white;
+      cursor: pointer;
+      border: none;
     }
-    .preview {
+    button:hover {
+      background: #0056b3;
+    }
+    #preview {
+      margin-top: 20px;
       display: flex;
       flex-wrap: wrap;
       justify-content: center;
-      margin: 15px 0;
     }
-    .preview img {
-      width: 80px;
-      height: 80px;
-      object-fit: cover;
+    #preview img {
+      max-width: 100px;
       margin: 5px;
-      border: 2px solid #007BFF;
-      border-radius: 8px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
     }
-    .btn {
-      background: #007BFF;
-      color: white;
-      padding: 10px 18px;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 16px;
-      margin-top: 10px;
-    }
-    .btn:hover {
-      background: #0056b3;
-    }
-    .pdf-result {
+    #pdfResult {
       margin-top: 20px;
       display: none;
     }
+    #pdfResult a {
+      display: inline-block;
+      margin-top: 10px;
+      padding: 10px 20px;
+      background: #28a745;
+      color: white;
+      border-radius: 8px;
+      text-decoration: none;
+    }
+    #pdfResult a:hover {
+      background: #218838;
+    }
     .pdf-icon {
-      font-size: 60px;
-      color: #007BFF;
+      font-size: 50px;
+      color: #d9534f;
     }
   </style>
 </head>
 <body>
-  <h2> Images to PDF Converter</h2>
-  <div class="uploader">
-    <input type="file" id="imageUpload" accept="image/*" multiple>
-    <div class="preview" id="preview"></div>
-    <button class="btn" onclick="generatePDF()">Generate PDF</button>
-  </div>
-
-  <div class="pdf-result" id="pdfResult">
-    <div class="pdf-icon">📄</div>
-    <button class="btn" id="downloadBtn">Download PDF</button>
+  <div class="container">
+    <h2>Multiple Images to PDF</h2>
+    <input type="file" id="images" multiple accept="image/*"><br>
+    <input type="text" id="pdfName" placeholder="Enter PDF Name" /><br>
+    <button onclick="generatePDF()">Generate PDF</button>
+    <div id="preview"></div>
+    <div id="pdfResult">
+      <div class="pdf-icon">📄</div>
+      <a id="downloadLink" href="#" download>Download PDF</a>
+    </div>
   </div>
 
   <script>
-    let selectedFiles = [];
+    function generatePDF() {
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF();
 
-    document.getElementById("imageUpload").addEventListener("change", (event) => {
-      selectedFiles = event.target.files;
+      const pdfName = document.getElementById("pdfName").value.trim() || "MyPDF";
+
+      const files = document.getElementById("images").files;
+      if (files.length === 0) {
+        alert("Please select images first!");
+        return;
+      }
+
+      let count = 0;
+      Array.from(files).forEach((file, index) => {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const img = new Image();
+          img.src = e.target.result;
+          img.onload = function() {
+            const imgWidth = 210;
+            const imgHeight = (img.height * imgWidth) / img.width;
+            if (index !== 0) pdf.addPage();
+            pdf.addImage(img, "JPEG", 0, 0, imgWidth, imgHeight);
+
+            count++;
+            if (count === files.length) {
+              const pdfBlob = pdf.output("blob");
+              const pdfUrl = URL.createObjectURL(pdfBlob);
+
+              const downloadLink = document.getElementById("downloadLink");
+              downloadLink.href = pdfUrl;
+              downloadLink.download = pdfName + ".pdf";
+
+              document.getElementById("pdfResult").style.display = "block";
+            }
+          };
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    document.getElementById("images").addEventListener("change", function() {
       const preview = document.getElementById("preview");
       preview.innerHTML = "";
-      Array.from(selectedFiles).forEach(file => {
+      Array.from(this.files).forEach(file => {
         const reader = new FileReader();
-        reader.onload = (e) => {
+        reader.onload = function(e) {
           const img = document.createElement("img");
           img.src = e.target.result;
           preview.appendChild(img);
@@ -94,45 +140,6 @@
         reader.readAsDataURL(file);
       });
     });
-
-    async function generatePDF() {
-      if (selectedFiles.length === 0) {
-        alert("Please select at least one image.");
-        return;
-      }
-
-      const { jsPDF } = window.jspdf;
-      const pdf = new jsPDF();
-
-      for (let i = 0; i < selectedFiles.length; i++) {
-        const file = selectedFiles[i];
-        const imgData = await readFileAsDataURL(file);
-
-        if (i > 0) pdf.addPage();
-        pdf.addImage(imgData, "JPEG", 10, 10, 190, 270);
-      }
-
-      const pdfBlob = pdf.output("blob");
-      const pdfUrl = URL.createObjectURL(pdfBlob);
-
-      document.getElementById("pdfResult").style.display = "block";
-
-      document.getElementById("downloadBtn").onclick = () => {
-        const a = document.createElement("a");
-        a.href = pdfUrl;
-        a.download = "images.pdf";
-        a.click();
-      };
-    }
-
-    function readFileAsDataURL(file) {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
-    }
   </script>
 </body>
 </html>
