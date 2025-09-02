@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lock & Unlock PDF</title>
+  <script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/pdf-lib-secure/dist/pdf-lib-secure.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f7ff;
+      text-align: center;
+      padding: 20px;
+    }
+    .container {
+      background: white;
+      padding: 25px;
+      border-radius: 12px;
+      max-width: 500px;
+      margin: auto;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    h2 {
+      color: #007BFF;
+    }
+    input, button {
+      margin: 10px;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      width: 80%;
+      max-width: 350px;
+    }
+    button {
+      background: #007BFF;
+      color: white;
+      cursor: pointer;
+      border: none;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    #result {
+      margin-top: 20px;
+      display: none;
+    }
+    #result a {
+      display: inline-block;
+      margin-top: 10px;
+      padding: 10px 20px;
+      background: #28a745;
+      color: white;
+      border-radius: 8px;
+      text-decoration: none;
+    }
+    #result a:hover {
+      background: #218838;
+    }
+    .pdf-icon {
+      font-size: 50px;
+      color: #d9534f;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>🔐 Lock & Unlock PDF</h2>
+
+    <input type="file" id="pdfFile" accept="application/pdf"><br>
+    <input type="password" id="password" placeholder="Enter Password"><br>
+
+    <button onclick="lockPDF()">Lock PDF</button>
+    <button onclick="unlockPDF()">Unlock PDF</button>
+
+    <div id="result">
+      <div class="pdf-icon">📄</div>
+      <a id="downloadLink" href="#" download>Download PDF</a>
+    </div>
+  </div>
+
+  <script>
+    async function lockPDF() {
+      const file = document.getElementById("pdfFile").files[0];
+      const password = document.getElementById("password").value;
+      if (!file || !password) {
+        alert("Please select PDF and enter password!");
+        return;
+      }
+
+      const arrayBuffer = await file.arrayBuffer();
+      const pdfBytes = await PDFLibSecure.encrypt(arrayBuffer, {
+        password: password
+      });
+
+      downloadResult(pdfBytes, file.name.replace(".pdf", "_locked.pdf"));
+    }
+
+    async function unlockPDF() {
+      const file = document.getElementById("pdfFile").files[0];
+      const password = document.getElementById("password").value;
+      if (!file || !password) {
+        alert("Please select PDF and enter password!");
+        return;
+      }
+
+      try {
+        const arrayBuffer = await file.arrayBuffer();
+        const pdfBytes = await PDFLibSecure.decrypt(arrayBuffer, password);
+
+        downloadResult(pdfBytes, file.name.replace(".pdf", "_unlocked.pdf"));
+      } catch (e) {
+        alert("❌ Wrong password or PDF not locked!");
+      }
+    }
+
+    function downloadResult(pdfBytes, filename) {
+      const blob = new Blob([pdfBytes], { type: "application/pdf" });
+      const url = URL.createObjectURL(blob);
+
+      const downloadLink = document.getElementById("downloadLink");
+      downloadLink.href = url;
+      downloadLink.download = filename;
+
+      document.getElementById("result").style.display = "block";
+    }
+  </script>
+</body>
+</html>
